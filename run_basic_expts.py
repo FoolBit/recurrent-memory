@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Apr 28 16:52:18 2016 by emin
+Based on Thu Apr 28 16:52:18 2016 by emin
 """
 import os
 import sys
@@ -48,7 +48,8 @@ task_list = [{"task_id":'DE1', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlin
              {"task_id":'VDE1',"n_out":1, "n_loc":1, "max_delay":100, "out_nonlin":lasagne.nonlinearities.linear},
              {"task_id":'Harvey2012', "n_out":1, "sigtc":15.0, "stim_rate":1.0, "n_loc":1, "out_nonlin":lasagne.nonlinearities.sigmoid},
              {"task_id":'SINE', "n_out":1, "n_loc":1, "alpha":0.25, "out_nonlin":lasagne.nonlinearities.linear},
-             {"task_id":'COMP', "n_out":1, "n_loc":1, "out_nonlin": lasagne.nonlinearities.sigmoid}
+             {"task_id":'COMP', "n_out":1, "n_loc":1, "out_nonlin": lasagne.nonlinearities.sigmoid},
+             {"task_id":'MEMORY', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlinearities.linear},
              ]
 
 # Task and model parameters
@@ -59,9 +60,9 @@ ExptDict = {"model": model_list[m_ind],
             "n_hid": 500,
             "n_in": 50,
             "batch_size": 50,
-            "stim_dur": 25,
-            "delay_dur": 100,
-            "resp_dur": 25,
+            "stim_dur": 100,
+            "delay_dur": 50,
+            "resp_dur": 100,
             "kappa": 2.0,
             "spon_rate": 0.1,
             "tr_max_iter": 25001,
@@ -77,7 +78,7 @@ input_var, target_var = T.tensor3s('input', 'target')
 l_out, l_rec = build_model(input_var, ExptDict)
 
 # The generated output variable and the loss function
-if ExptDict["task"]["task_id"] in ['DE1','DE2','GDE2','VDE1','SINE']:
+if ExptDict["task"]["task_id"] in ['DE1','DE2','GDE2','VDE1','SINE','MEMORY']:
     pred_var = lasagne.layers.get_output(l_out)
 elif ExptDict["task"]["task_id"] in ['CD1','CD2','Harvey2012','Harvey2012Dynamic','Harvey2016','COMP']:
     pred_var = T.clip(lasagne.layers.get_output(l_out), 1e-6, 1.0 - 1e-6)
@@ -114,7 +115,7 @@ for i, (example_input, example_output, s, opt) in generator:
         s_vec   = np.asarray(s_vec)
         infloss = build_performance(s_vec,opt_vec,net_vec,ExptDict)
         infloss_vec.append(infloss)
-        print 'Batch #%d; Absolute loss: %.6f; Fractional loss: %.6f' % (i, score, infloss)
+        print('Batch #%d; Absolute loss: %.6f; Fractional loss: %.6f' % (i, score, infloss))
         s_vec   = []
         opt_vec = []
         net_vec = []
@@ -135,7 +136,7 @@ opt_vec = np.asarray(opt_vec)
 net_vec = np.asarray(net_vec)
 s_vec   = np.asarray(s_vec)
 infloss_test = build_performance(s_vec,opt_vec,net_vec,ExptDict)
-print 'Test data; Fractional loss: %.6f' %infloss_test
+print('Test data; Fractional loss: %.6f' %infloss_test)
 
 # Input and hidden layer activities
 ex_hid_vec = np.asarray(ex_hid_vec)

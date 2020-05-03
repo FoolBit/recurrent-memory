@@ -3,14 +3,14 @@
 Created on Thu Apr 28 18:53:50 2016 by @author: emin
 """
 import numpy as np
-from scipy.misc import comb
+from scipy.special import comb
 import scipy.stats as scistat
 
 def scramble(a, axis=-1):
     """
     Return an array with the values of `a` independently shuffled along the given axis
     """
-    b        = np.random.random(a.shape)
+    b        = np.random.rand(a.shape)
     idx      = np.argsort(b, axis=axis)
     shuffled = a[np.arange(a.shape[0])[:, None], idx]
     return shuffled
@@ -673,6 +673,103 @@ class GatedDelayedEstimationTask(Task):
         mu_aux[C1ind,0] = mu_x[C1ind,1]
         
         return example_input, example_output, S, mu_aux
+
+class WorkingMemoryTask(Task):
+    '''Parameters'''
+    def __init__(self, max_iter=None, batch_size=50, \
+        n_loc=1, n_in=25, n_out=1, \
+            stim1_dur=100, delay_dur=50, stim2_dur=100, keep_dur=300, cue_dur=10, resp_dur=100, \
+                kappa=2.0, spon_rate=0.001, tr_cond='all_gains'):
+        super(WorkingMemoryTask, self).__init__(max_iter=max_iter, batch_size=batch_size)
+        self.n_in      = n_in                             # number of neurons per location
+        self.n_out     = n_out
+        self.n_loc     = n_loc
+        self.kappa     = kappa
+        self.spon_rate = spon_rate
+        self.nneuron   = self.n_in * self.n_loc           # total number of input neurons
+        self.phi       = np.linspace(0, np.pi, self.n_in)
+        self.stim1_dur = stim1_dur
+        self.delay_dur = delay_dur
+        self.stim2_dur = stim2_dur
+        self.keep_dur  = keep_dur
+        self.cue_dur   = cue_dur
+        self.resp_dur  = resp_dur
+        self.total_dur = stim1_dur + delay_dur + stim2_dur + keep_dur + cue_dur + resp_dur
+        self.tr_cond   = tr_cond
+        
+    def sample(self):
+        
+        if self.tr_cond == 'all_gains':
+            G1 = (1.0/self.stim1_dur) * np.random.choice([1.0], size=(self.n_loc,self.batch_size))
+            G1 = np.repeat(G1,self.n_in,axis=0).T
+            G1 = np.tile(G1,(self.stim1_dur,1,1))
+            G1 = np.swapaxes(G1,0,1)
+
+            G2 = (1.0/self.stim2_dur) * np.random.choice([1.0], size=(self.n_loc,self.batch_size))
+            G2 = np.repeat(G2,self.n_in,axis=0).T
+            G2 = np.tile(G2,(self.stim2_dur,1,1))
+            G2 = np.swapaxes(G2,0,1)
+        else:
+            G1 = (0.5/self.stim1_dur) * np.random.choice([1.0], size=(self.n_loc,self.batch_size))
+            G1 = np.repeat(G1,self.n_in,axis=0).T
+            G1 = np.tile(G1,(self.stim1_dur,1,1))
+            G1 = np.swapaxes(G1,0,1)
+
+            G2 = (0.5/self.stim2_dur) * np.random.choice([1.0], size=(self.n_loc,self.batch_size))
+            G2 = np.repeat(G2,self.n_in,axis=0).T
+            G2 = np.tile(G2,(self.stim2_dur,1,1))
+            G2 = np.swapaxes(G2,0,1)
+
+        C              = np.random.choice([0.0, 1.0], size=(self.batch_size,))
+        C0ind          = np.where(C==0.0)[0]        # change
+        C1ind          = np.where(C==1.0)[0]        # change
+                
+        S1             = np.pi * np.random.rand(self.n_loc, self.batch_size)
+        S2             = np.pi * np.random.rand(self.n_loc, self.batch_size)
+        S              = S1.T.copy()
+        S[C1ind,0]       = S2.T[C1ind,0] 
+
+        S1             = np.repeat(S1,self.n_in,axis=0).T
+        S1             = np.tile(S1,(self.stim1_dur,1,1))
+        S1             = np.swapaxes(S1,0,1)
+
+        S2             = np.repeat(S2,self.n_in,axis=0).T
+        S2             = np.tile(S2,(self.stim2_dur,1,1))
+        S2             = np.swapaxes(S2,0,1)
+
+        # Noisy responses
+        L1             = G1 * np.exp( self.kappa * (np.cos( 2.0 * (S1 - np.tile(self.phi, (self.batch_size,self.stim1_dur,self.n_loc) ) ) ) - 1.0) ) # stim 1 
+        Ld             = (self.spon_rate / self.delay_dur) * np.ones((self.batch_size,self.delay_dur,self.nneuron)) # delay
+        L2             = G2 * np.exp( self.kappa * (np.cos( 2.0 * (S2 - np.tile(self.phi, (self.batch_size,self.stim2_dur,self.n_loc) ) ) ) - 1.0) ) # stim 2 
+
+        Lk             = (self.spon_rate / self.keep_dur) * np.ones((self.batch_size,self.keep_dur,self.nneuron)) # delay
+        Lr             = (self.spon_rate / self.resp_dur) * np.ones((self.batch_size,self.resp_dur,self.nneuron))    
+        Lr[C0ind,:,:]  = 5.0*Lr[C0ind,:,:] # cue 0
+        Lr[C1ind,:,:]  = 10.0*Lr[C1ind,:,:] # cue 1
+
+        R1             = np.random.poisson(L1)
+        Rd             = np.random.poisson(Ld)
+        R2             = np.random.poisson(L2)
+        Rk             = np.random.poisson(Lk)
+        Rr             = np.random.poisson(Lr)
+
+        example_input  = np.concatenate((R1,Rd,R2,Rk,Rr), axis=1)
+        example_output = np.repeat(S[:,np.newaxis,:],self.total_dur,axis=1)
+        
+        cum_R1         = np.sum(R1,axis=1)         
+        mu1_x          = np.asarray([ np.arctan2( np.dot(cum_R1[:,i*self.n_in:(i+1)*self.n_in],np.sin(2.0*self.phi)), np.dot(cum_R1[:,i*self.n_in:(i+1)*self.n_in],np.cos(2.0*self.phi))) for i in range(self.n_loc) ]) / 2.0
+        mu1_x          = (mu1_x > 0.0) * mu1_x + (mu1_x<0.0) * (mu1_x + np.pi) 
+        mu1_x          = mu1_x.T
+
+        cum_R2         = np.sum(R2,axis=1)         
+        mu2_x          = np.asarray([ np.arctan2( np.dot(cum_R2[:,i*self.n_in:(i+1)*self.n_in],np.sin(2.0*self.phi)), np.dot(cum_R2[:,i*self.n_in:(i+1)*self.n_in],np.cos(2.0*self.phi))) for i in range(self.n_loc) ]) / 2.0
+        mu2_x          = (mu2_x > 0.0) * mu2_x + (mu2_x<0.0) * (mu2_x + np.pi) 
+        mu2_x          = mu2_x.T
+        # mu_x           = np.repeat(mu_x[:,np.newaxis,:],self.total_dur,axis=1)
+
+        mu1_x[C1ind,0] = mu2_x[C1ind,0]
+        
+        return example_input, example_output, S, mu1_x
 
 
 class VarGatedDelayedEstimationTask(Task):

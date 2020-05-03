@@ -64,7 +64,28 @@ def build_generators(ExptDict):
     tr_max_iter   = ExptDict["tr_max_iter"]
     test_max_iter = ExptDict["test_max_iter"]   
     
-    if task == 'DE1':
+    if task == 'MEMORY':
+        generator = generators.WorkingMemoryTask(max_iter=tr_max_iter, 
+                                                     batch_size=batch_size, 
+                                                     n_loc=n_loc, n_in=n_in, 
+                                                     n_out=n_out, stim1_dur=stim_dur, 
+                                                     delay_dur=delay_dur, 
+                                                     resp_dur=resp_dur, kappa=kappa, 
+                                                     spon_rate=spon_rate, 
+                                                     tr_cond=tr_cond)   
+                                                
+        test_generator = generators.WorkingMemoryTask(max_iter=test_max_iter, 
+                                                          batch_size=batch_size, 
+                                                          n_loc=n_loc, n_in=n_in, 
+                                                          n_out=n_out, 
+                                                          stim1_dur=stim_dur, 
+                                                          delay_dur=delay_dur, 
+                                                          resp_dur=resp_dur, 
+                                                          kappa=kappa, 
+                                                          spon_rate=spon_rate, 
+                                                          tr_cond=test_cond)
+    
+    elif task == 'DE1':
         generator = generators.DelayedEstimationTask(max_iter=tr_max_iter, 
                                                      batch_size=batch_size, 
                                                      n_loc=n_loc, n_in=n_in, 
@@ -309,7 +330,7 @@ def build_loss(pred_var,target_var,ExptDict):
     task     = ExptDict["task"]["task_id"]
     resp_dur = ExptDict["resp_dur"]
     
-    if task in ['DE1','DE2','GDE2','VDE1']:
+    if task in ['DE1','DE2','GDE2','VDE1','MEMORY']:
         loss = T.mean(T.mod(T.abs_(pred_var[:,-resp_dur:,:] - target_var[:,-resp_dur:,:]), np.pi))
     elif task in ['CD1','CD2','Harvey2012','Harvey2012Dynamic','Harvey2016','COMP']:
         loss = T.mean(lasagne.objectives.binary_crossentropy(pred_var[:,-resp_dur:,-1], target_var[:,-resp_dur:,-1])) 
@@ -322,12 +343,12 @@ def build_performance(s_vec,opt_vec,net_vec,ExptDict):
     # Unpack necessary variables
     task     = ExptDict["task"]["task_id"]
 
-    if task in ['DE1','DE2','GDE2','VDE1']:
+    if task in ['DE1','DE2','GDE2','VDE1','MEMORY']:
         rmse_opt = np.nanmean(np.mod(np.abs(np.squeeze(s_vec) - np.squeeze(opt_vec)), np.pi)) 
         rmse_net = np.nanmean(np.mod(np.abs(np.squeeze(s_vec) - np.squeeze(net_vec)), np.pi))
         infloss  = (rmse_net - rmse_opt) / rmse_opt
     elif task in ['CD1','CD2','Harvey2012','Harvey2012Dynamic','Harvey2016','COMP']:
-        infloss = np.nanmean( opt_vec * np.log(opt_vec/net_vec) + (1.0 - opt_vec) * np.log((1.0 - opt_vec)/(1.0 - net_vec)) ) / 
+        infloss = np.nanmean( opt_vec * np.log(opt_vec/net_vec) + (1.0 - opt_vec) * np.log((1.0 - opt_vec)/(1.0 - net_vec)) ) / \
         np.nanmean( opt_vec * np.log(2.0*opt_vec) + (1.0-opt_vec) * np.log(2.0*(1.0-opt_vec)) ) 
     elif task in ['SINE']:
         infloss = np.mean(np.abs(np.squeeze(opt_vec) - np.squeeze(net_vec)))
