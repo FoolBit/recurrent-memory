@@ -744,8 +744,8 @@ class WorkingMemoryTask(Task):
 
         Lk             = (self.spon_rate / self.keep_dur) * np.ones((self.batch_size,self.keep_dur,self.nneuron)) # delay
         Lr             = (self.spon_rate / self.resp_dur) * np.ones((self.batch_size,self.resp_dur,self.nneuron))    
-        Lr[C0ind,:,:]  = 5.0*Lr[C0ind,:,::2] # cue 0
-        Lr[C1ind,:,:]  = 5.0*Lr[C1ind,:,1::2] # cue 1
+        Lr[C0ind,:,::2]  = 5.0*Lr[C0ind,:,::2] # cue 0
+        Lr[C1ind,:,1::2]  = 5.0*Lr[C1ind,:,1::2] # cue 1
 
         R1             = np.random.poisson(L1)
         Rd             = np.random.poisson(Ld)
