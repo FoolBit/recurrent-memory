@@ -49,7 +49,7 @@ task_list = [{"task_id":'DE1', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlin
              {"task_id":'Harvey2012', "n_out":1, "sigtc":15.0, "stim_rate":1.0, "n_loc":1, "out_nonlin":lasagne.nonlinearities.sigmoid},
              {"task_id":'SINE', "n_out":1, "n_loc":1, "alpha":0.25, "out_nonlin":lasagne.nonlinearities.linear},
              {"task_id":'COMP', "n_out":1, "n_loc":1, "out_nonlin": lasagne.nonlinearities.sigmoid},
-             {"task_id":'MEMORY', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlinearities.linear},
+             {"task_id":'MEMORY', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlinearities.sigmoid},
              ]
 
 # Task and model parameters
@@ -140,12 +140,10 @@ print('Test data; Fractional loss: %.6f' %infloss_test)
 
 # Input and hidden layer activities
 ex_hid_vec = np.asarray(ex_hid_vec)
-ex_hid_vec = np.reshape(ex_hid_vec,(-1, generator.stim_dur + generator.delay_dur +
-                                    generator.resp_dur, ExptDict["n_hid"]))
+ex_hid_vec = np.reshape(ex_hid_vec,(-1, generator.total_dur, ExptDict["n_hid"]))
 
 ex_inp_vec = np.asarray(ex_inp_vec)
-ex_inp_vec = np.reshape(ex_inp_vec,(-1, generator.stim_dur + generator.delay_dur +
-                                    generator.resp_dur, ExptDict["task"]["n_loc"] * generator.n_in))
+ex_inp_vec = np.reshape(ex_inp_vec,(-1, generator.total_dur, ExptDict["task"]["n_loc"] * generator.n_in))
 
 # SAVE TRAINED MODEL
 sio.savemat('basic_sigma%f_lambda%f_rho%f_model%i_task%i.mat'%(offdiag_val, diag_val, wdecay_coeff, m_ind, t_ind),
