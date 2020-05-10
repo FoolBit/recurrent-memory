@@ -49,7 +49,7 @@ task_list = [{"task_id":'DE1', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlin
              {"task_id":'Harvey2012', "n_out":1, "sigtc":15.0, "stim_rate":1.0, "n_loc":1, "out_nonlin":lasagne.nonlinearities.sigmoid},
              {"task_id":'SINE', "n_out":1, "n_loc":1, "alpha":0.25, "out_nonlin":lasagne.nonlinearities.linear},
              {"task_id":'COMP', "n_out":1, "n_loc":1, "out_nonlin": lasagne.nonlinearities.sigmoid},
-             {"task_id":'MEMORY', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlinearities.sigmoid},
+             {"task_id":'MEMORY', "n_out":1, "n_loc":1, "out_nonlin":lasagne.nonlinearities.tanh},
              ]
 
 # Task and model parameters
