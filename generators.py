@@ -678,7 +678,7 @@ class WorkingMemoryTask(Task):
     '''Parameters'''
     def __init__(self, max_iter=None, batch_size=50, \
         n_loc=1, n_in=25, n_out=1, \
-            stim1_dur=100, delay_dur=50, stim2_dur=100, keep_dur=300, cue_dur=10, resp_dur=100, \
+            stim1_dur=100, delay_dur=50, stim2_dur=100, keep_dur=300, resp_dur=100, \
                 kappa=2.0, spon_rate=0.001, tr_cond='all_gains'):
         super(WorkingMemoryTask, self).__init__(max_iter=max_iter, batch_size=batch_size)
         self.n_in      = n_in                             # number of neurons per location
@@ -694,7 +694,7 @@ class WorkingMemoryTask(Task):
         self.keep_dur  = keep_dur
         self.cue_dur   = cue_dur
         self.resp_dur  = resp_dur
-        self.total_dur = stim1_dur + delay_dur + stim2_dur + keep_dur + cue_dur + resp_dur
+        self.total_dur = stim1_dur + delay_dur + stim2_dur + keep_dur + resp_dur
         self.tr_cond   = tr_cond
         
     def sample(self):
@@ -727,7 +727,7 @@ class WorkingMemoryTask(Task):
         S1             = np.pi * np.random.rand(self.n_loc, self.batch_size)
         S2             = np.pi * np.random.rand(self.n_loc, self.batch_size)
         S              = S1.T.copy()
-        S[C1ind,0]       = S2.T[C1ind,0] 
+        S[C1ind,0]     = S2.T[C1ind,0] 
 
         S1             = np.repeat(S1,self.n_in,axis=0).T
         S1             = np.tile(S1,(self.stim1_dur,1,1))
